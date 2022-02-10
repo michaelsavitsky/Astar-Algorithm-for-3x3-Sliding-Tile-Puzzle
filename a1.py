@@ -94,29 +94,17 @@ def astar_search(init_state, goal_state, move_cost):
                     continue
 
             open.append(future_child)
-def h(state, goal_state):
+
+# Calculates heuristic for a given state
+def h(current_state, goal_state):
     total = 0
     for i in range(9):
-        total = total + manhattan_distance(state, goal_state, i)
+        total = total + np.sum(np.absolute(get_pos(current_state, i) - get_pos(goal_state, i)))
     return total
 
-def manhattan_distance(state_a, state_b, value):
-    return np.sum(np.absolute(get_pos(state_a, value) - get_pos(state_b, value)))
-
+# Gets the x,y position of a given value in a state
 def get_pos(state, value):
     return np.argwhere(state.value == value)[0]
-
-def valid_moves(state):
-    valid_moves = []
-    if get_pos(state, 0)[1] > 0:
-        valid_moves.append(UP)
-    if get_pos(state, 0)[1] < 2:
-        valid_moves.append(DOWN)
-    if get_pos(state, 0)[0] > 0:
-        valid_moves.append(LEFT)
-    if get_pos(state, 0)[0] < 2:
-        valid_moves.append(RIGHT)
-    return valid_moves
 
 print(astar_search([0,8,7,1,2,6,3,4,5], [1,8,7,2,0,6,3,4,5], [1,1,1,1]) == 'rd')
 print(astar_search([1,8,7,3,0,2,4,5,6], [1,8,7,2,0,6,3,4,5], [1,1,1,1]) == 'druuld')
