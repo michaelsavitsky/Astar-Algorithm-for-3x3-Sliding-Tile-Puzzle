@@ -1,9 +1,10 @@
 import numpy as np
 
 class Direction(object):
-    def __init__(self, value, char):
+    def __init__(self, value, char, move_cost):
         self.value = value
         self.char = char
+        self.move_cost = move_cost
     def __eq__(self, other):
         if self.char == other.char: return True
 
@@ -21,30 +22,18 @@ class State(object):
         print(self.value[0,1], self.value[1,1], self.value[2,1])
         print(self.value[0,2], self.value[1,2], self.value[2,2])
         print("----------")
-    def attr_print(self):
-        print("----------")
-        print(self.value)
-        # print(self.parent)
-        print(self.parent_move.char)
-        print(self.f)
-        print(self.g)
-        print(self.h)
     def __eq__(self, other):
         return (self.value == other.value).all()
-
-UP    = Direction(np.array([0,-1]), 'u')
-DOWN  = Direction(np.array([0,1]), 'd')
-LEFT  = Direction(np.array([-1,0]), 'l')
-RIGHT = Direction(np.array([1,0]), 'r')
-DIRECTIONS = np.array([UP, DOWN, LEFT, RIGHT])
 
 def astar_search(init_state, goal_state, move_cost):
     start_state = State(np.array(init_state).reshape(3, 3), None)
     goal_state = State(np.array(goal_state).reshape(3, 3), None)
 
-    # print(start_state.value)
-    # print(goal_state.value)
-    # print(start_state == goal_state)
+    UP    = Direction(np.array([0,-1]), 'u', move_cost[0])
+    DOWN  = Direction(np.array([0,1]), 'd', move_cost[1])
+    LEFT  = Direction(np.array([-1,0]), 'l', move_cost[2])
+    RIGHT = Direction(np.array([1,0]), 'r', move_cost[3])
+    DIRECTIONS = np.array([UP, DOWN, LEFT, RIGHT])
 
     open = []
     closed = []
@@ -52,7 +41,6 @@ def astar_search(init_state, goal_state, move_cost):
     open.append(start_state)
 
     while len(open) > 0:
-    # for i in range(10):
 
         # Gets the state from the open list with the lowest f value
         current_state = open[0]
@@ -75,41 +63,37 @@ def astar_search(init_state, goal_state, move_cost):
                 current = current.parent
             return moves[::-1]
 
+        # Get list of valid moves given current state
+        valid_moves = []
+        if get_pos(current_state, 0)[1] > 0:
+            valid_moves.append(UP)
+        if get_pos(current_state, 0)[1] < 2:
+            valid_moves.append(DOWN)
+        if get_pos(current_state, 0)[0] > 0:
+            valid_moves.append(LEFT)
+        if get_pos(current_state, 0)[0] < 2:
+            valid_moves.append(RIGHT)
+
         # Generate children
-        children = []
-        for move in valid_moves(current_state):
+        for move in valid_moves:
             pos_zero = get_pos(current_state, 0)
             possible_state = current_state.value.copy()
-            # test2[1], test2[2] = test[2], test[1]
             possible_state[tuple(pos_zero)], possible_state[tuple(pos_zero + move.value)] = current_state.value[tuple(pos_zero + move.value)], current_state.value[tuple(pos_zero)]
 
-            future_state_obj = State(possible_state, current_state, move)
+            future_child = State(possible_state, current_state, move)
 
-            # print(future_state_obj.parent_move.char)
-            children.append(future_state_obj)
-            # future_state_obj.print()
-
-        for child in children:
-            # Check if child is in the closed list already
             for closed_child in closed:
-                if child == closed_child: continue
+                if future_child == closed_child: continue
 
-            # Generate f, h, and g values. g values come from move_cost parameter
-            child.g = current_state.g + 1
-            child.h = h(child, goal_state)
-            child.f = child.h + child.g
+            future_child.g = current_state.g + move.move_cost
+            future_child.h = h(future_child, goal_state)
+            future_child.f = future_child.h + future_child.g
 
             for open_state in open:
-                if child == open_state and child.g > open_state.g:
+                if future_child == open_state and future_child.g > open_state.g:
                     continue
 
-            open.append(child)
-
-
-
-    # test(start_state, goal_state)
-
-
+            open.append(future_child)
 def h(state, goal_state):
     total = 0
     for i in range(9):
@@ -134,29 +118,9 @@ def valid_moves(state):
         valid_moves.append(RIGHT)
     return valid_moves
 
-def test(start_state, goal_state):
-    start_state.print()
-    goal_state.print()
-    print("get_pos")
-    print(get_pos(start_state, 2))
-    print(get_pos(goal_state, 2))
-    print(get_pos(start_state, 7))
-    print(get_pos(goal_state, 7))
-    print(get_pos(start_state, 6))
-    print(get_pos(goal_state, 6))
-    print("manhattan_distance")
-    print(manhattan_distance(start_state, goal_state, 2))
-    print(manhattan_distance(start_state, goal_state, 7))
-    print(manhattan_distance(start_state, goal_state, 6))
-    print("heuristic")
-    print(h(start_state, goal_state))
-
-# 1 3 4
-# 8 0 5
-# 7 2 6
-
-# 1 2 3
-# 8 0 4
-# 7 6 5
-path = astar_search([1,8,7,3,0,2,4,5,6],[1,8,7,2,0,6,3,4,5],[1,1,1,1])
-print(path)
+print(astar_search([0,8,7,1,2,6,3,4,5], [1,8,7,2,0,6,3,4,5], [1,1,1,1]) == 'rd')
+print(astar_search([1,8,7,3,0,2,4,5,6], [1,8,7,2,0,6,3,4,5], [1,1,1,1]) == 'druuld')
+print(astar_search([1,6,0,2,7,8,3,4,5], [1,8,7,2,0,6,3,4,5], [1,1,2,2]) == 'urdlur')
+print(astar_search([1,6,0,2,7,8,3,4,5], [1,8,7,2,0,6,3,4,5], [3,3,1,1]) == 'ruldru')
+print(astar_search([8,0,7,1,4,3,2,5,6], [1,8,7,2,0,6,3,4,5], [1,1,1,1]) == 'urddrulurdl')
+print(astar_search([8,0,7,1,4,3,2,5,6], [1,8,7,2,0,6,3,4,5], [1,1,2,2]) == 'urddrulurdl')
